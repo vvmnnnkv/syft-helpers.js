@@ -37,9 +37,7 @@
     "build": "rollup -c",
     "prepare": "npm run build",
     "test": "jest --coverage",
-    "test:watch": "jest --watch",
-    "version": "auto-changelog -p && git add CHANGELOG.md",
-    "release": "np"
+    "test:watch": "jest --watch"
   },
   "browserslist": "> 0.25%, not dead",
   "husky": {
@@ -61,11 +59,9 @@
   "devDependencies": {
     "@babel/core": "^7.5.5",
     "@babel/preset-env": "^7.5.5",
-    "auto-changelog": "^1.14.1",
     "babel-jest": "^24.8.0",
     "husky": "^3.0.1",
     "jest": "^24.8.0",
-    "np": "^5.0.3",
     "prettier": "^1.18.2",
     "pretty-quick": "^1.11.1",
     "rollup": "1.20.2",
