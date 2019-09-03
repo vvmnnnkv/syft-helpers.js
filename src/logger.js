@@ -1,13 +1,14 @@
 // A simple logging function
 export default class Logger {
-  constructor(verbose) {
+  constructor(system = 'syft.js', verbose) {
+    this.system = system;
     this.verbose = verbose;
   }
 
   log(message, data) {
     // Only log if verbose is turned on
     if (this.verbose) {
-      const output = `${Date.now()}: syft.js - ${message}`;
+      const output = `${Date.now()}: ${this.system} - ${message}`;
 
       // Have the passed additional data?
       if (data) {
