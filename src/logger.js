@@ -1,6 +1,6 @@
 // A simple logging function
 export default class Logger {
-  constructor(system = 'syft.js', verbose) {
+  constructor(system, verbose) {
     this.system = system;
     this.verbose = verbose;
   }
