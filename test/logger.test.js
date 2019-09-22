@@ -8,7 +8,7 @@ describe('Logger', () => {
   });
 
   test('can skip when verbose is false', () => {
-    const testLogger = new Logger(false),
+    const testLogger = new Logger('syft.js', false),
       message = 'hello';
 
     expect(testLogger.verbose).toBe(false);
@@ -20,7 +20,7 @@ describe('Logger', () => {
   });
 
   test('can log under verbose mode', () => {
-    const testLogger = new Logger(true),
+    const testLogger = new Logger('syft.js', true),
       message = 'hello';
 
     expect(testLogger.verbose).toBe(true);
@@ -36,7 +36,7 @@ describe('Logger', () => {
   });
 
   test('can log with data', () => {
-    const testLogger = new Logger(true),
+    const testLogger = new Logger('syft.js', true),
       message = 'hello',
       myObj = { awesome: true };
 
