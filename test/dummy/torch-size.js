@@ -5,6 +5,6 @@ export const torchSizeShape = [2];
 export const torchSize2 = new TorchSize(torchSizeShape);
 
 export const simplifiedTorchSize = runReplacers(
-  `(13, (${torchSizeShape}))`,
+  `(10, (${torchSizeShape}))`,
   SIMPLIFY_REPLACERS
 );

@@ -54,7 +54,8 @@
     ]
   },
   "dependencies": {
-    "immutable-tuple": "^0.4.10"
+    "immutable-tuple": "^0.4.10",
+    "pysyft-proto": "git+https://github.com/vvmnnnkv/proto.git#serde-protocol"
   },
   "devDependencies": {
     "@babel/core": "^7.5.5",

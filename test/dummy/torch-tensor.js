@@ -19,7 +19,7 @@ export const torchTensor = new TorchTensor(
 
 export const simplifiedTorchTensor = runReplacers(
   `
-(12,
+(13,
  (${id},
   (5,(b'${bin}')),
   ${chain},

@@ -18,6 +18,13 @@ import { getArgs } from './_helpers';
 // Import our errors
 import { NO_DETAILER } from './_errors';
 
+// Create map of type name => type code.
+const proto_info = require('pysyft-proto').proto_info;
+const ID = {};
+for (let type of Object.keys(proto_info.TYPES)) {
+  ID[type] = proto_info.TYPES[type].code;
+}
+
 // These are the replace functions we will run to convert Javascript to Python
 export const SIMPLIFY_REPLACERS = [
   [/null/g, 'None'], // Convert all nulls to Nones
@@ -54,33 +61,33 @@ export const runReplacers = (data, replacers) => {
 export const simplify = data => {
   const SIMPLIFIERS = {
     dict: d =>
-      `(0, (${Array.from(d)
+      `(${ID.dict}, (${Array.from(d)
         .map(([key, value]) => `(${parse(key)}, ${parse(value)})`)
         .join()}))`,
-    list: d => `(1, (${d.map(i => parse(i)).join()}))`,
-    range: d => `(2, (${d.start}, ${d.end}, ${d.step}))`,
-    set: d => `(3, (${[...d].map(i => parse(i)).join()}))`,
-    slice: d => `(4, (${d.start}, ${d.end}, ${d.step}))`,
-    str: d => `(5, (b'${d}'))`,
-    tuple: d => `(6, (${d.map(i => parse(i)).join()}))`,
+    list: d => `(${ID.list}, (${d.map(i => parse(i)).join()}))`,
+    range: d => `(${ID.range}, (${d.start}, ${d.end}, ${d.step}))`,
+    set: d => `(${ID.set}, (${[...d].map(i => parse(i)).join()}))`,
+    slice: d => `(${ID.slice}, (${d.start}, ${d.end}, ${d.step}))`,
+    str: d => `(${ID.str}, (b'${d}'))`,
+    tuple: d => `(${ID.tuple}, (${d.map(i => parse(i)).join()}))`,
     torchTensor: d =>
-      `(12, (${getArgs(TorchTensor)
+      `(${ID['torch.Tensor']}, (${getArgs(TorchTensor)
         .map(i => parse(d[i]))
         .join()}))`,
-    torchSize: d => `(13, (${d.size}))`,
+    torchSize: d => `(${ID['torch.Size']}, (${d.size}))`,
     plan: d => {
       const args = getArgs(Plan),
         operations = d[args[0]].map(i => parse(i)),
         rest = args.slice(1).map(i => parse(d[i]));
 
-      return `(19, ((${operations}), ${rest.join()}))`;
+      return `(${ID['syft.messaging.plan.Plan']}, ((${operations}), ${rest.join()}))`;
     },
     pointerTensor: d =>
-      `(20, (${getArgs(PointerTensor)
+      `(${ID['syft.generic.pointers.pointer_tensor.PointerTensor']}, (${getArgs(PointerTensor)
         .map(i => parse(d[i]))
         .join()}))`,
     message: d =>
-      `(24, (${getArgs(Message)
+      `(${ID['syft.messaging.message.Message']}, (${getArgs(Message)
         .map(i => parse(d[i]))
         .join()}))`
   };
@@ -120,33 +127,19 @@ export const simplify = data => {
 // 3. Recursively parse the data
 // 4. Depending on the data type, we may run it through a detailer function to convert that value into the appropriate JAvascript type
 export const detail = data => {
-  const DETAILERS = [
-    d => new Map(d.map(i => i.map(j => parse(j)))), // 0 = dict
-    d => d.map(i => parse(i)), // 1 = list
-    d => new Range(...d), // 2 = range
-    d => new Set(d.map(i => parse(i))), // 3 = set
-    d => new Slice(...d), // 4 = slice
-    d => d[0], // 5 = str
-    d => Tuple(...d.map(i => parse(i))), // 6 = tuple
-    null, // 7
-    null, // 8
-    null, // 9
-    null, // 10
-    null, // 11
-    d => new TorchTensor(...d.map(i => parse(i))), // 12 = torch-tensor
-    d => new TorchSize(d), // 13 = torch.Size
-    null, // 14
-    null, // 15
-    null, // 16
-    null, // 17
-    null,
-    d => new Plan(d[0].map(j => parse(j)), ...d.slice(1).map(i => parse(i))), // 19 = plan
-    d => new PointerTensor(...d.map(i => parse(i))), // 20 = pointer-tensor
-    null,
-    null,
-    null,
-    d => new Message(...d.map(i => parse(i))) // 24 = message
-  ];
+  const DETAILERS = {};
+  DETAILERS[ID.dict] = d => new Map(d.map(i => i.map(j => parse(j))));
+  DETAILERS[ID.list] =  d => d.map(i => parse(i));
+  DETAILERS[ID.range] = d => new Range(...d);
+  DETAILERS[ID.set] = d => new Set(d.map(i => parse(i)));
+  DETAILERS[ID.slice] = d => new Slice(...d);
+  DETAILERS[ID.str] = d => d[0];
+  DETAILERS[ID.tuple] = d => Tuple(...d.map(i => parse(i)));
+  DETAILERS[ID['torch.Tensor']] = d => new TorchTensor(...d.map(i => parse(i)));
+  DETAILERS[ID['torch.Size']] = d => new TorchSize(d);
+  DETAILERS[ID['syft.messaging.plan.Plan']] = d => new Plan(d[0].map(j => parse(j)), ...d.slice(1).map(i => parse(i)));
+  DETAILERS[ID['syft.generic.pointers.pointer_tensor.PointerTensor']] = d => new PointerTensor(...d.map(i => parse(i)));
+  DETAILERS[ID['syft.messaging.message.Message']] = d => new Message(...d.map(i => parse(i)));
 
   const parse = d => {
     if (
