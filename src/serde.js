@@ -11,6 +11,7 @@ import TorchSize from './custom-types/torch-size';
 import Plan from './custom-types/plan';
 import PointerTensor from './custom-types/pointer-tensor';
 import Message from './custom-types/message';
+import Operation from './custom-types/operation';
 
 // Import our helpers
 import { getArgs } from './_helpers';
@@ -41,7 +42,7 @@ export const DETAIL_REPLACERS = [
   [/None/g, null], // Convert all Nones to nulls
   [/False/g, false], // Convert all False to false
   [/True/g, true], // Convert all True to true
-  [/,]/g, ']'] // Trim all Arrays with an extra comma
+  [/,\s*?\]/g, ']'] // Trim all Arrays with an extra comma
 ];
 
 // A simple function to run the above replacers
@@ -80,16 +81,24 @@ export const simplify = data => {
         operations = d[args[0]].map(i => parse(i)),
         rest = args.slice(1).map(i => parse(d[i]));
 
-      return `(${ID['syft.messaging.plan.Plan']}, ((${operations}), ${rest.join()}))`;
+      return `(${
+        ID['syft.messaging.plan.Plan']
+      }, ((${operations}), ${rest.join()}))`;
     },
     pointerTensor: d =>
-      `(${ID['syft.generic.pointers.pointer_tensor.PointerTensor']}, (${getArgs(PointerTensor)
+      `(${ID['syft.generic.pointers.pointer_tensor.PointerTensor']}, (${getArgs(
+        PointerTensor
+      )
         .map(i => parse(d[i]))
         .join()}))`,
     message: d =>
       `(${ID['syft.messaging.message.Message']}, (${getArgs(Message)
         .map(i => parse(d[i]))
-        .join()}))`
+        .join()}))`,
+    operation: d =>
+      `(${ID['syft.messaging.message.Operation']}, (${d.type}, (${parse(
+        d.message
+      )}, (${d.return_ids.join()}))))`
   };
 
   const parse = d => {
@@ -108,6 +117,7 @@ export const simplify = data => {
     else if (d instanceof TorchSize) simplifierId = 'torchSize';
     else if (d instanceof Plan) simplifierId = 'plan';
     else if (d instanceof PointerTensor) simplifierId = 'pointerTensor';
+    else if (d instanceof Operation) simplifierId = 'operation';
     else if (d instanceof Message) simplifierId = 'message';
 
     if (simplifierId !== null) {
@@ -129,7 +139,7 @@ export const simplify = data => {
 export const detail = data => {
   const DETAILERS = {};
   DETAILERS[ID.dict] = d => new Map(d.map(i => i.map(j => parse(j))));
-  DETAILERS[ID.list] =  d => d.map(i => parse(i));
+  DETAILERS[ID.list] = d => d.map(i => parse(i));
   DETAILERS[ID.range] = d => new Range(...d);
   DETAILERS[ID.set] = d => new Set(d.map(i => parse(i)));
   DETAILERS[ID.slice] = d => new Slice(...d);
@@ -137,9 +147,14 @@ export const detail = data => {
   DETAILERS[ID.tuple] = d => Tuple(...d.map(i => parse(i)));
   DETAILERS[ID['torch.Tensor']] = d => new TorchTensor(...d.map(i => parse(i)));
   DETAILERS[ID['torch.Size']] = d => new TorchSize(d);
-  DETAILERS[ID['syft.messaging.plan.Plan']] = d => new Plan(d[0].map(j => parse(j)), ...d.slice(1).map(i => parse(i)));
-  DETAILERS[ID['syft.generic.pointers.pointer_tensor.PointerTensor']] = d => new PointerTensor(...d.map(i => parse(i)));
-  DETAILERS[ID['syft.messaging.message.Message']] = d => new Message(...d.map(i => parse(i)));
+  DETAILERS[ID['syft.messaging.plan.Plan']] = d =>
+    new Plan(d[0].map(j => parse(j)), ...d.slice(1).map(i => parse(i)));
+  DETAILERS[ID['syft.generic.pointers.pointer_tensor.PointerTensor']] = d =>
+    new PointerTensor(...d.map(i => parse(i)));
+  DETAILERS[ID['syft.messaging.message.Message']] = d =>
+    new Message(...d.map(i => parse(i)));
+  DETAILERS[ID['syft.messaging.message.Operation']] = d =>
+    new Operation(parse(d[1][0]), Tuple(...d[1][1]));
 
   const parse = d => {
     if (
@@ -149,7 +164,6 @@ export const detail = data => {
       Array.isArray(d[1])
     ) {
       const detailer = DETAILERS[d[0]];
-
       if (detailer) {
         return detailer(d[1]);
       }

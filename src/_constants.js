@@ -30,3 +30,14 @@ export const WEBRTC_PEER_OPTIONS = {
     { RtpDataChannels: true } // Required in Firefox to use the DataChannels API
   ]
 };
+
+export const MSGTYPE_CMD = 1;
+export const MSGTYPE_OBJ = 2;
+export const MSGTYPE_OBJ_REQ = 3;
+export const MSGTYPE_OBJ_DEL = 4;
+export const MSGTYPE_EXCEPTION = 5;
+export const IS_NONE = 6;
+export const GET_SHAPE = 7;
+export const SEARCH = 8;
+export const FORCE_OBJ_DEL = 9;
+export const PLAN_CMD = 10;
